@@ -1,0 +1,128 @@
+---
+title: "p8105_Hw1_as7123"
+author: "Arthur Starodynov"
+date: "2023-09-15"
+output: github_document
+---
+
+
+*Problem 1* 
+
+```{r,results = FALSE} 
+install.packages("moderndive",repos = "http://cran.us.r-project.org")
+library(moderndive)
+```
+
+
+Loading the dataset
+
+```{r} 
+data_set <- data("early_january_weather")
+
+```
+
+
+Describing the Data Set 
+
+```{r}
+# Looking at the data set we can clearly see that 
+#there 15 columns or 15 variables. These variables 
+#range from the location of the where the weather 
+#number was collected, the date it was collected down
+#to the hour, temperature, dew, humidity, a few various
+#wind variables, air pressure, and visibility. It is a
+#data frame of 358 rows representing hourly measurements
+#and 15 variables
+```
+
+
+Describing the Data Set further 
+```{r} 
+typeof(early_january_weather)
+
+```
+
+
+Here we used ncol and nrow to find the total number of rows and columns in the data frame, as well as 2 methods to find the mean of the column "temp" 
+```{r}
+data_set_vector <- as.matrix(data_set)
+nrow(early_january_weather)
+ncol(early_january_weather)
+mean(early_january_weather[["temp"]]) # or
+mean(early_january_weather$temp)
+
+```
+
+
+To examine the data set more we can make a plot using ggplot2
+```{r}
+library(ggplot2)
+ggplot(early_january_weather, aes(x = time_hour, y = temp, color = temp)) + geom_point()
+```
+
+
+Looking at the plot is clear that the temperature is variable but throughout the day the temperature increases and then decreases again. Once the day starts the temperature low then increases throughout the day and then decreases again at night.
+
+
+Save the Plot for future reference. 
+```{r, results = FALSE}
+ggsave(filename = "Temp VS Time_hour.pdf")
+```
+
+
+_Problem 2_
+
+
+Create a data frame comprised of:
+
+
+a random sample of size 10 from a standard Normal distribution
+a logical vector indicating whether elements of the sample are greater than 0
+a character vector of length 10
+a factor vector of length 10, with 3 different factor “levels”
+
+
+
+```{r, results= FALSE}
+library(dplyr)
+```
+
+
+We have created our sample data frame
+```{r} 
+prob_2_df = 
+  tibble( 
+    sample_var = rnorm(10),
+    logic_var = sample_var > 0,
+    character_var = c("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"),
+    factor_var = factor(c(rep("low",3),rep("medium",2), rep("high",5))),
+    )
+prob_2_df
+```
+
+
+If we try to take the mean, it will not allow us, due to non numeric inputs. 
+```{r} 
+mean(prob_2_df)
+```
+
+
+Hence, we have to pull only the numeric numbers and find the mean that way.
+```{r, results= FALSE}
+library(tidyverse)
+```
+```{r}
+new_sample_var <- pull(prob_2_df, var = sample_var)
+mean(new_sample_var)
+```
+
+
+Changing the other variables into numerics.
+```{r,results=FALSE}
+numeric_logic <- as.numeric(prob_2_df[["sample_var"]])
+numeric_character <- as.numeric(prob_2_df[["character_var"]])
+numeric_factor <- as.numeric(prob_2_df[["factor_var"]])
+```
+
+
+When we change these variables into numerics, NA is applied via coersion, and this is due to R not being able to define these variables in a way. There is no logical way to put a number to these variables. Mean is not able to be found.
