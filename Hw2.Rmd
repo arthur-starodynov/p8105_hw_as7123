@@ -1,0 +1,178 @@
+---
+title: "p8105_Hw2_as7123"
+author: "Arthur Starodynov"
+date: "2023-09-15"
+output: github_document
+---
+
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(readxl)
+library(dplyr)
+library(magrittr)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+
+cleaning of the pols-month data set 
+
+```{r, eval = FALSE} 
+pols_monthdf <- read_csv("fivethirtyeight_datasets/pols-month.csv")
+pols_monthdf = pols_monthdf %>%
+  janitor:: clean_names() %>%
+  separate(col = "mon", into = c("year", "month", "day"), remove = FALSE, convert=TRUE,extra="warn", fill="warn") %>%
+  mutate(months =  as.character(month(ymd(010101) + months(month-1),label=TRUE,abbr=TRUE))) %>%
+  mutate(
+    president = recode(prez_gop, "0" = "dem", "1" = "gop", "2" = "gop")) %>%
+  select(-prez_dem, -prez_gop, -day, -month)%>%
+  select(year, months)
+```
+cleaning of the snp data set 
+
+```{r, eval = FALSE}
+
+snp <- 
+  read_csv("fivethirtyeight_datasets/snp.csv") %>%
+  separate(date, sep = "/", into = c("month", "day", "year")) %>%  # m/d/y variables
+  mutate_at(c("year", "month", "day"), as.numeric) %>% # convert to numeric
+  mutate(month = month.abb[month]) %>% # jan-dec
+  select(-day) %>% # remove day
+  relocate(year, month)
+
+```
+
+Cleaning of the unemployment data set 
+
+```{r, eval = FALSE}
+unemployment = 
+  read_csv("fivethirtyeight_datasets/unemployment.csv") %>%
+  rename(year = Year) %>%
+  pivot_longer(
+    Jan:Dec, 
+    names_to = "month_abb",
+    values_to = "unemployment"
+  ) %>%
+  left_join(x = ., y = month_df) %>%
+  select(year, month, unemployment)
+
+```
+
+
+
+## Problem 2
+
+
+Here we clen the Trash Wheel collecection data se. We use janitor to clean the names and rename some variables to make it following work easier. We will get rid of all the NA's and then add a new variable calleed homes powewred which represents the amount of homes powered through an eqation given in excel sheet. 
+
+
+
+```{r}
+Mr_t_df = read_excel("data/202309 Trash Wheel Collection Data.xlsx",range =  cell_cols("A:N"), col_names = TRUE,
+                     trim_ws = TRUE, skip = 1) %>%
+  janitor:: clean_names() %>%
+  rename(dumpster_number = dumpster) %>% 
+  filter(!is.na(dumpster_number)) %>% 
+  mutate(homes_powered =((weight_tons*500)/30)) %>%
+  mutate(sheet_num = 1)
+
+Mr_t_df
+
+```
+
+Here we will import the other 2 data tables based on the sheet of the excel file. From there we will make a common variable called sheet number amongst all three data sets so that we can finalize a merge of the data sets amongst all of them. Below will be the final product of the merge
+
+```{r}
+Prof_t_df = read_excel("data/202309 Trash Wheel Collection Data.xlsx", sheet = 2, range =  cell_cols("A:N"), col_names = TRUE, trim_ws = TRUE, skip = 1) %>%
+  janitor::clean_names()%>%
+  rename(dumpster_number = dumpster) %>% 
+  filter(!is.na(dumpster_number)) %>%
+  mutate(sheet_num = 2) 
+
+```
+
+```{r}
+Gwyn_df = read_excel("data/202309 Trash Wheel Collection Data.xlsx", sheet = 4, range =  cell_cols("A:N"), col_names = TRUE, trim_ws = TRUE, skip = 1) %>%
+  janitor::clean_names()%>%
+  rename(dumpster_number = dumpster) %>%
+  filter(!is.na(dumpster_number)) %>%
+  mutate(sheet_num = 3) 
+
+```
+
+```{r}
+trash_1 <- merge(Mr_t_df,Prof_t_df, by = "sheet_num", all = T)
+trash_all <- merge(trash_1, Gwyn_df, by = "sheet_num", all = T)
+```
+
+
+My final dataset contains `r nrow(trash_all)` observations. There are multiple records of per each dumpster by the 3 different collectors. The volume of the trash collected is available as well as the weight, type, and even more. The total weight collected by Professor Trash Wheel is 216.26. Adn the total number of cigarette butts collected by Gwtnda in July of 2021 was 16300. 
+
+
+## Problem #3 
+
+The first step in this problem is cleaning the data set, which in my case was just to clean the data set a little bit using the janitor function. From there we notice some calculatios. 
+
+
+```{r} 
+
+MCI_df<- read_csv("data_mci/MCI_baseline.csv") %>%
+  janitor:: clean_names() 
+```
+
+
+This is the number of observations
+```{r}
+
+#of people
+nrow(MCI_df)
+
+```
+
+
+This is the number of people that followed the baseline procotl of being included in the study.
+
+```{r}
+length(which(MCI_df$age_at_the_onset_of_mci_missing_if_a_subject_remains_mci_free_during_the_follow_up_period != "."))
+
+```
+
+
+```{r}
+age <- as.numeric(MCI_df$age_at_the_study_baseline)
+mean(age)
+length(which(MCI_df$x1_male_0_female == "0", MCI_df$x1_apoe4_carrier_0_apoe4_non_carrier == "1"))
+
+```
+
+
+Here we input the second data set and clean it by rename the variable to have the study ID which will then be joined the first data set so that we can see which patients are in both data sets. 
+
+```{r}
+MCI_df <- read_csv("data_mci/MCI_baseline.csv") %>%
+  janitor:: clean_names() %>%
+  filter(x1_apoe4_carrier_0_apoe4_non_carrier == "1")%>%
+  drop_na() %>%
+  rename(Study_ID = x1)
+
+
+
+
+MCI_df2 <- read_csv("data_mci/mci_amyloid.csv") %>%
+  janitor:: clean_names()%>%
+  drop_na() %>%
+  rename(Study_ID = study_id)
+
+
+```
+
+
+The merged data data is seen here 
+
+```{r}
+Combined_df <-merge(MCI_df,MCI_df2, by = "Study_ID")
+write_csv(Combined_df, file = "data_mci/MCI_DF")
+
+```
+
